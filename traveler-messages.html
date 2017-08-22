@@ -1,0 +1,118 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-request.html">
+<!-- `<traveler-messages>` is a Traveler messages component.
+@element traveler-messages -->
+
+<dom-module id="traveler-messages">
+  <template>
+    <div class="traveler-messages-container">
+      <!-- <header>[[header]]</header> -->
+      
+      <!-- <div class="traveler-messages">
+        <template is="dom-repeat" items="{{results}}">
+           <div class="traveler-message">
+             <a href="#{{item.message_id}}" data-control="toggle" class="toggle">{{item.title}}</a>
+             <div id="{{item.message_id}}" class="toggle-pane">{{item.content}}</div>
+           </div>  
+        </template>
+      </div>
+    </div> -->
+
+    <iron-request
+      id="messagesRequest"
+    ></iron-request>
+  </template>
+
+  <script>
+    class TravelerMessages extends Polymer.Element {
+      static get is() { return 'traveler-messages'; }
+
+      static get properties() {
+        return {
+          header: {
+            type: String,
+            value: 'Traveler messages'
+          },
+          url: {
+            type: String,
+            value: '/traveler-message-service/v1/messages/?stage=beta&company_id=19373&product_id=60003&lob=FLIGHT&placement=SEARCH_FORM&visible=AGENT,TRAVELER&message_type=CUSTOM&status=ACTIVE&ClientId=EU'
+          },
+          results: {
+            type: Array,
+            value: []
+          }
+        };
+      }
+
+      constructor() {
+        super();
+      }
+
+      ready() {
+        super.ready();
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+        let request;
+
+        request = this.$.messagesRequest.send({
+          url: this.url,
+          headers: {ClientId: "EU"}
+        });
+        
+        request.then( function(response){
+          let results,
+          modal,
+          modalContent,
+          modalTitle;
+          
+          results = JSON.parse(response.parseResponse());
+
+          modalContent = ["<ul>"];
+          modalTitle = this.header;
+
+          results = _.map(results.traveler_messages, function(result){
+            let html;
+
+            html = `<li>
+              <div class='title'> ${result.messages[0].title} </div>
+              <div clas='content'>${result.messages[0].message}</div>
+              </li>
+              <hr>
+              `;
+            modalContent.push(html);
+            return {
+              message_id: result.message_id,
+              title: result.messages[0].title,
+              content: result.messages[0].message
+            }
+          });
+
+          modalContent.push('</ul>');
+
+          modal = uitk.modal.create({
+            modalId: 'modalId',
+            content: modalContent.join(''),
+            title: modalTitle,
+            confirm: true
+          });
+
+          modal.open();
+
+          this.set('results', results);
+        }.bind(this));      
+      }
+
+      urlUpdated() {
+        console.log('url updated');
+      }
+
+      getServiceUrl() {
+        return '/traveler-message-service';
+      }
+    }
+
+    window.customElements.define(TravelerMessages.is, TravelerMessages);
+  </script>
+</dom-module>
